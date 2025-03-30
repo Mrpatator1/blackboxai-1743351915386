@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Horaires de Trains</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            background-image: url('https://images.pexels.com/photos/163726/belgium-antwerp-railway-train-163726.jpeg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        .overlay {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <div class="overlay min-h-screen">
+        <header class="bg-blue-900 p-4 shadow-md">
+            <div class="container mx-auto flex justify-between items-center">
+                <h1 class="text-2xl font-bold">Gestion des Horaires de Trains</h1>
+                <div class="space-x-4">
+                    <a href="login.html" class="hover:text-blue-200"><i class="fas fa-sign-in-alt"></i> Connexion</a>
+                    <a href="register.html" class="hover:text-blue-200"><i class="fas fa-user-plus"></i> Inscription</a>
+                </div>
+            </div>
+        </header>
+
+        <main class="container mx-auto p-4">
+            <div class="bg-gray-800 bg-opacity-90 rounded-lg p-6 shadow-xl">
+                <h2 class="text-xl font-semibold mb-4">Horaires des Trains</h2>
+                
+                <div class="mb-4 flex justify-between">
+                    <div class="w-1/2">
+                        <input type="text" id="searchInput" placeholder="Rechercher par gare..." 
+                               class="w-full p-2 rounded bg-gray-700 text-white">
+                    </div>
+                    <div class="w-1/4">
+                        <select id="filterDirection" class="w-full p-2 rounded bg-gray-700 text-white">
+                            <option value="all">Toutes les directions</option>
+                            <option value="departure">Départs</option>
+                            <option value="arrival">Arrivées</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-gray-700 rounded-lg overflow-hidden">
+                        <thead>
+                            <tr class="bg-blue-900">
+                                <th class="p-3 text-left">Train</th>
+                                <th class="p-3 text-left">Origine</th>
+                                <th class="p-3 text-left">Destination</th>
+                                <th class="p-3 text-left">Départ</th>
+                                <th class="p-3 text-left">Arrivée</th>
+                                <th class="p-3 text-left">Places</th>
+                                <th class="p-3 text-left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trainTable">
+                            <!-- Train data will be loaded here via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <footer class="bg-blue-900 p-4 mt-8">
+            <div class="container mx-auto text-center">
+                <p>&copy; 2023 Gestion des Horaires de Trains. Tous droits réservés.</p>
+            </div>
+        </footer>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                loadTrainData();
+                
+                // Search functionality
+                document.getElementById('searchInput').addEventListener('input', function() {
+                    filterTrains();
+                });
+                
+                // Filter functionality
+                document.getElementById('filterDirection').addEventListener('change', function() {
+                    filterTrains();
+                });
+            });
+
+            function loadTrainData() {
+                fetch('api/trains.php')
+                    .then(response => response.json())
+                    .then(data => {
+                        const tableBody = document.getElementById('trainTable');
+                        tableBody.innerHTML = '';
+                        
+                        data.forEach(train => {
+                            const row = document.createElement('tr');
+                            row.className = 'border-b border-gray-600 hover:bg-gray-600';
+                            row.innerHTML = `
+                                <td class="p-3">${train.name}</td>
+                                <td class="p-3">${train.origin}</td>
+                                <td class="p-3">${train.destination}</td>
+                                <td class="p-3">${train.departure_time}</td>
+                                <td class="p-3">${train.arrival_time}</td>
+                                <td class="p-3">${train.seats_available}</td>
+                                <td class="p-3">
+                                    <a href="book.html?train_id=${train.id}" 
+                                       class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded">
+                                        <i class="fas fa-ticket-alt"></i> Réserver
+                                    </a>
+                                </td>
+                            `;
+                            tableBody.appendChild(row);
+                        });
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+
+            function filterTrains() {
+                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                const filterDirection = document.getElementById('filterDirection').value;
+                const rows = document.querySelectorAll('#trainTable tr');
+                
+                rows.forEach(row => {
+                    const origin = row.cells[1].textContent.toLowerCase();
+                    const destination = row.cells[2].textContent.toLowerCase();
+                    const shouldShow = 
+                        (origin.includes(searchTerm) || destination.includes(searchTerm)) &&
+                        (filterDirection === 'all' || 
+                         (filterDirection === 'departure' && origin.includes(searchTerm)) ||
+                         (filterDirection === 'arrival' && destination.includes(searchTerm)));
+                    
+                    row.style.display = shouldShow ? '' : 'none';
+                });
+            }
+        </script>
+    </div>
+</body>
+</html>
