@@ -16,23 +16,49 @@ function getTrains() {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+function getTrainsWithStations() {
+    $conn = connectDB();
+    $stmt = $conn->query("
+        SELECT t.*, 
+               ds.name as departure_station_name,
+               ds.city as departure_city,
+               as.name as arrival_station_name, 
+               as.city as arrival_city
+        FROM trains t
+        JOIN stations ds ON t.departure_station_id = ds.id
+        JOIN stations as ON t.arrival_station_id = as.id
+        ORDER BY t.departure_time
+    ");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 function getTrainById($id) {
     $conn = connectDB();
-    $stmt = $conn->prepare("SELECT * FROM trains WHERE id = ?");
+    $stmt = $conn->prepare("
+        SELECT t.*, 
+               ds.name as departure_station_name,
+               ds.city as departure_city,
+               as.name as arrival_station_name,
+               as.city as arrival_city
+        FROM trains t
+        JOIN stations ds ON t.departure_station_id = ds.id
+        JOIN stations as ON t.arrival_station_id = as.id
+        WHERE t.id = ?
+    ");
     $stmt->execute([$id]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-function addTrain($name, $origin, $destination, $departure, $arrival, $seats) {
+function addTrain($name, $departure_station_id, $arrival_station_id, $departure, $arrival, $seats) {
     $conn = connectDB();
-    $stmt = $conn->prepare("INSERT INTO trains (name, origin, destination, departure_time, arrival_time, seats_available) VALUES (?, ?, ?, ?, ?, ?)");
-    return $stmt->execute([$name, $origin, $destination, $departure, $arrival, $seats]);
+    $stmt = $conn->prepare("INSERT INTO trains (name, departure_station_id, arrival_station_id, departure_time, arrival_time, seats_available) VALUES (?, ?, ?, ?, ?, ?)");
+    return $stmt->execute([$name, $departure_station_id, $arrival_station_id, $departure, $arrival, $seats]);
 }
 
-function updateTrain($id, $name, $origin, $destination, $departure, $arrival, $seats) {
+function updateTrain($id, $name, $departure_station_id, $arrival_station_id, $departure, $arrival, $seats) {
     $conn = connectDB();
-    $stmt = $conn->prepare("UPDATE trains SET name=?, origin=?, destination=?, departure_time=?, arrival_time=?, seats_available=? WHERE id=?");
-    return $stmt->execute([$name, $origin, $destination, $departure, $arrival, $seats, $id]);
+    $stmt = $conn->prepare("UPDATE trains SET name=?, departure_station_id=?, arrival_station_id=?, departure_time=?, arrival_time=?, seats_available=? WHERE id=?");
+    return $stmt->execute([$name, $departure_station_id, $arrival_station_id, $departure, $arrival, $seats, $id]);
 }
 
 function deleteTrain($id) {
@@ -58,5 +84,25 @@ function createUser($username, $password) {
     $password_hash = password_hash($password, PASSWORD_DEFAULT);
     $stmt = $conn->prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)");
     return $stmt->execute([$username, $password_hash]);
+}
+
+// Station functions
+function getStations() {
+    $conn = connectDB();
+    $stmt = $conn->query("SELECT * FROM stations ORDER BY name");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getStationById($id) {
+    $conn = connectDB();
+    $stmt = $conn->prepare("SELECT * FROM stations WHERE id = ?");
+    $stmt->execute([$id]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+function addStation($name, $city) {
+    $conn = connectDB();
+    $stmt = $conn->prepare("INSERT INTO stations (name, city) VALUES (?, ?)");
+    return $stmt->execute([$name, $city]);
 }
 ?>
