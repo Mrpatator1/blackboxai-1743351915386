@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription - Gestion des Horaires de Trains</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            background-image: url('https://images.pexels.com/photos/163726/belgium-antwerp-railway-train-163726.jpeg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        .overlay {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <div class="overlay min-h-screen flex items-center justify-center">
+        <div class="w-full max-w-md p-8 bg-gray-800 bg-opacity-90 rounded-lg shadow-xl">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold mb-2">Inscription</h1>
+                <p class="text-gray-300">Créez votre compte</p>
+            </div>
+
+            <form id="registerForm" class="space-y-6">
+                <div>
+                    <label for="username" class="block mb-2 text-sm font-medium">Nom d'utilisateur</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <i class="fas fa-user text-gray-400"></i>
+                        </div>
+                        <input type="text" id="username" name="username" required
+                               class="w-full pl-10 p-2.5 rounded bg-gray-700 border border-gray-600 text-white focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Choisissez un nom d'utilisateur">
+                    </div>
+                    <p id="usernameError" class="mt-1 text-xs text-red-400 hidden">Ce nom d'utilisateur est déjà pris</p>
+                </div>
+
+                <div>
+                    <label for="password" class="block mb-2 text-sm font-medium">Mot de passe</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <i class="fas fa-lock text-gray-400"></i>
+                        </div>
+                        <input type="password" id="password" name="password" required minlength="6"
+                               class="w-full pl-10 p-2.5 rounded bg-gray-700 border border-gray-600 text-white focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Créez un mot de passe">
+                    </div>
+                    <p class="mt-1 text-xs text-gray-400">Minimum 6 caractères</p>
+                </div>
+
+                <div>
+                    <label for="confirmPassword" class="block mb-2 text-sm font-medium">Confirmer le mot de passe</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <i class="fas fa-lock text-gray-400"></i>
+                        </div>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required minlength="6"
+                               class="w-full pl-10 p-2.5 rounded bg-gray-700 border border-gray-600 text-white focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Confirmez votre mot de passe">
+                    </div>
+                    <p id="passwordError" class="mt-1 text-xs text-red-400 hidden">Les mots de passe ne correspondent pas</p>
+                </div>
+
+                <button type="submit" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                    S'inscrire
+                </button>
+
+                <p class="text-sm text-center text-gray-400">
+                    Déjà un compte? <a href="login.html" class="text-blue-400 hover:underline">Se connecter</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // Reset error messages
+            document.getElementById('usernameError').classList.add('hidden');
+            document.getElementById('passwordError').classList.add('hidden');
+
+            // Validate password match
+            if (password !== confirmPassword) {
+                document.getElementById('passwordError').classList.remove('hidden');
+                return;
+            }
+
+            fetch('api/register.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Inscription réussie! Vous pouvez maintenant vous connecter.');
+                    window.location.href = 'login.html';
+                } else {
+                    if (data.error === 'username_exists') {
+                        document.getElementById('usernameError').classList.remove('hidden');
+                    } else {
+                        alert('Erreur lors de l\'inscription: ' + data.message);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Une erreur est survenue');
+            });
+        });
+
+        // Check username availability on blur
+        document.getElementById('username').addEventListener('blur', function() {
+            const username = this.value;
+            if (username.length < 3) return;
+
+            fetch('api/check_username.php?username=' + encodeURIComponent(username))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.exists) {
+                        document.getElementById('usernameError').classList.remove('hidden');
+                    } else {
+                        document.getElementById('usernameError').classList.add('hidden');
+                    }
+                });
+        });
+    </script>
+</body>
+</html>
