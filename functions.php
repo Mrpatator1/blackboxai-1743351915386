@@ -105,4 +105,50 @@ function addStation($name, $city) {
     $stmt = $conn->prepare("INSERT INTO stations (name, city) VALUES (?, ?)");
     return $stmt->execute([$name, $city]);
 }
+
+function getTrainStations($train_id) {
+    $conn = connectDB();
+    $stmt = $conn->prepare("
+        SELECT ts.*, s.name as station_name, s.city
+        FROM train_stations ts
+        JOIN stations s ON ts.station_id = s.id
+        WHERE ts.train_id = ?
+        ORDER BY ts.stop_order
+    ");
+    $stmt->execute([$train_id]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function addTrainStation($train_id, $station_id, $arrival_time, $departure_time, $stop_order) {
+    $conn = connectDB();
+    $stmt = $conn->prepare("
+        INSERT INTO train_stations 
+        (train_id, station_id, arrival_time, departure_time, stop_order) 
+        VALUES (?, ?, ?, ?, ?)
+    ");
+    return $stmt->execute([$train_id, $station_id, $arrival_time, $departure_time, $stop_order]);
+}
+
+function getFullTrainDetails($train_id) {
+    $conn = connectDB();
+    $stmt = $conn->prepare("
+        SELECT t.*, 
+               ds.name as departure_station_name, 
+               ds.city as departure_city,
+               as.name as arrival_station_name,
+               as.city as arrival_city
+        FROM trains t
+        JOIN stations ds ON t.departure_station_id = ds.id
+        JOIN stations as ON t.arrival_station_id = as.id
+        WHERE t.id = ?
+    ");
+    $stmt->execute([$train_id]);
+    $train = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($train) {
+        $train['stations'] = getTrainStations($train_id);
+    }
+    
+    return $train;
+}
 ?>
