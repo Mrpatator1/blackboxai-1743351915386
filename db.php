@@ -19,15 +19,26 @@ try {
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // Create tables
+    $sql = "CREATE TABLE IF NOT EXISTS stations (
+        id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(50) NOT NULL UNIQUE,
+        city VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )";
+    
+    $conn->exec($sql);
+
     $sql = "CREATE TABLE IF NOT EXISTS trains (
         id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(50) NOT NULL,
-        origin VARCHAR(50) NOT NULL,
-        destination VARCHAR(50) NOT NULL,
+        departure_station_id INT(6) UNSIGNED NOT NULL,
+        arrival_station_id INT(6) UNSIGNED NOT NULL,
         departure_time TIME NOT NULL,
         arrival_time TIME NOT NULL,
         seats_available INT(6) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (departure_station_id) REFERENCES stations(id),
+        FOREIGN KEY (arrival_station_id) REFERENCES stations(id)
     )";
     $conn->exec($sql);
     
