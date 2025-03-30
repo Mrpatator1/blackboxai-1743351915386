@@ -19,7 +19,7 @@ switch ($method) {
                     echo json_encode(['error' => 'Train not found']);
                 }
             } else {
-                $trains = getTrains();
+                $trains = getTrainsWithStations();
                 echo json_encode($trains);
             }
         } catch(PDOException $e) {
@@ -39,13 +39,13 @@ switch ($method) {
 
         $data = json_decode(file_get_contents('php://input'), true);
         $name = sanitizeInput($data['name']);
-        $origin = sanitizeInput($data['origin']);
-        $destination = sanitizeInput($data['destination']);
+        $departure_station_id = (int)sanitizeInput($data['departure_station_id']);
+        $arrival_station_id = (int)sanitizeInput($data['arrival_station_id']);
         $departure = sanitizeInput($data['departure_time']);
         $arrival = sanitizeInput($data['arrival_time']);
         $seats = (int)sanitizeInput($data['seats_available']);
 
-        if (addTrain($name, $origin, $destination, $departure, $arrival, $seats)) {
+        if (addTrain($name, $departure_station_id, $arrival_station_id, $departure, $arrival, $seats)) {
             echo json_encode(['success' => true, 'message' => 'Train added successfully']);
         } else {
             http_response_code(500);
@@ -65,13 +65,13 @@ switch ($method) {
         $data = json_decode(file_get_contents('php://input'), true);
         $id = (int)sanitizeInput($data['id']);
         $name = sanitizeInput($data['name']);
-        $origin = sanitizeInput($data['origin']);
-        $destination = sanitizeInput($data['destination']);
+        $departure_station_id = (int)sanitizeInput($data['departure_station_id']);
+        $arrival_station_id = (int)sanitizeInput($data['arrival_station_id']);
         $departure = sanitizeInput($data['departure_time']);
         $arrival = sanitizeInput($data['arrival_time']);
         $seats = (int)sanitizeInput($data['seats_available']);
 
-        if (updateTrain($id, $name, $origin, $destination, $departure, $arrival, $seats)) {
+        if (updateTrain($id, $name, $departure_station_id, $arrival_station_id, $departure, $arrival, $seats)) {
             echo json_encode(['success' => true, 'message' => 'Train updated successfully']);
         } else {
             http_response_code(500);
