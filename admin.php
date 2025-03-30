@@ -134,6 +134,42 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
                     </form>
                 </div>
             </div>
+
+            <!-- Gares desservies Section -->
+            <div class="mt-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold">Gares desservies</h2>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow overflow-hidden p-4">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Sélectionner un train</label>
+                        <select id="trainSelect" class="w-full p-2 border rounded">
+                            <!-- Options will be loaded by JavaScript -->
+                        </select>
+                    </div>
+
+                    <div id="stationsContainer" class="hidden">
+                        <h3 class="font-medium mb-2">Gares desservies par ce train</h3>
+                        <div id="stationsList" class="mb-4">
+                            <!-- Stations will be loaded here -->
+                        </div>
+                        
+                        <h3 class="font-medium mb-2">Ajouter une gare</h3>
+                        <div class="grid grid-cols-4 gap-2">
+                            <select id="stationSelect" class="col-span-2 p-2 border rounded">
+                                <!-- Stations options will be loaded here -->
+                            </select>
+                            <input type="time" id="arrivalTime" class="p-2 border rounded" placeholder="Arrivée">
+                            <input type="time" id="departureTime" class="p-2 border rounded" placeholder="Départ">
+                            <input type="number" id="stopOrder" class="p-2 border rounded" placeholder="Ordre" min="1">
+                            <button id="addStationBtn" class="col-span-3 bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
+                                Ajouter la gare
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -141,7 +177,136 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
         document.addEventListener('DOMContentLoaded', function() {
             loadTrains();
             setupModal();
+            setupStationsManagement();
         });
+
+        function setupStationsManagement() {
+            // Load trains and stations for dropdowns
+            Promise.all([
+                fetch('api/trains.php').then(r => r.json()),
+                fetch('api/stations.php').then(r => r.json())
+            ]).then(([trains, stations]) => {
+                const trainSelect = document.getElementById('trainSelect');
+                const stationSelect = document.getElementById('stationSelect');
+                
+                // Populate train dropdown
+                trainSelect.innerHTML = '<option value="">Sélectionner un train</option>' + 
+                    trains.map(train => `<option value="${train.id}">${train.name}</option>`).join('');
+                
+                // Populate station dropdown
+                stationSelect.innerHTML = stations.map(station => 
+                    `<option value="${station.id}">${station.name} (${station.city})</option>`
+                ).join('');
+                
+                // Handle train selection
+                trainSelect.addEventListener('change', function() {
+                    const trainId = this.value;
+                    if (trainId) {
+                        loadTrainStations(trainId);
+                        document.getElementById('stationsContainer').classList.remove('hidden');
+                    } else {
+                        document.getElementById('stationsContainer').classList.add('hidden');
+                    }
+                });
+                
+                // Handle add station
+                document.getElementById('addStationBtn').addEventListener('click', function() {
+                    const trainId = trainSelect.value;
+                    const stationId = stationSelect.value;
+                    const arrivalTime = document.getElementById('arrivalTime').value;
+                    const departureTime = document.getElementById('departureTime').value;
+                    const stopOrder = document.getElementById('stopOrder').value;
+                    
+                    if (!trainId || !stationId || !stopOrder) {
+                        alert('Veuillez remplir tous les champs obligatoires');
+                        return;
+                    }
+                    
+                    fetch('api/train_stations.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            train_id: trainId,
+                            station_id: stationId,
+                            arrival_time: arrivalTime,
+                            departure_time: departureTime,
+                            stop_order: stopOrder
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            loadTrainStations(trainId);
+                            // Clear form
+                            document.getElementById('arrivalTime').value = '';
+                            document.getElementById('departureTime').value = '';
+                            document.getElementById('stopOrder').value = '';
+                        } else {
+                            alert('Erreur: ' + (data.error || 'Échec de l\'ajout'));
+                        }
+                    });
+                });
+            });
+        }
+
+        function loadTrainStations(trainId) {
+            fetch(`api/train_stations.php?train_id=${trainId}`)
+                .then(response => response.json())
+                .then(stations => {
+                    const container = document.getElementById('stationsList');
+                    if (stations.length === 0) {
+                        container.innerHTML = '<p class="text-gray-500">Aucune gare desservie</p>';
+                        return;
+                    }
+                    
+                    container.innerHTML = `
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left">Gare</th>
+                                    <th class="px-4 py-2 text-left">Arrivée</th>
+                                    <th class="px-4 py-2 text-left">Départ</th>
+                                    <th class="px-4 py-2 text-left">Ordre</th>
+                                    <th class="px-4 py-2 text-left">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${stations.map(station => `
+                                    <tr>
+                                        <td class="px-4 py-2">${station.station_name} (${station.city})</td>
+                                        <td class="px-4 py-2">${station.arrival_time || '-'}</td>
+                                        <td class="px-4 py-2">${station.departure_time || '-'}</td>
+                                        <td class="px-4 py-2">${station.stop_order}</td>
+                                        <td class="px-4 py-2">
+                                            <button onclick="deleteTrainStation(${station.id}, ${trainId})" class="text-red-600 hover:text-red-900">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                });
+        }
+
+        function deleteTrainStation(stationId, trainId) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette gare du trajet ?')) {
+                fetch(`api/train_stations.php?id=${stationId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadTrainStations(trainId);
+                    } else {
+                        alert('Erreur lors de la suppression');
+                    }
+                });
+            }
+        }
 
         function loadTrains() {
             fetch('api/trains.php')
