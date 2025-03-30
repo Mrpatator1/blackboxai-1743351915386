@@ -40,6 +40,19 @@ try {
         FOREIGN KEY (departure_station_id) REFERENCES stations(id),
         FOREIGN KEY (arrival_station_id) REFERENCES stations(id)
     )";
+    
+    $conn->exec($sql);
+    
+    $sql = "CREATE TABLE IF NOT EXISTS train_stations (
+        id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        train_id INT(6) UNSIGNED NOT NULL,
+        station_id INT(6) UNSIGNED NOT NULL,
+        arrival_time TIME,
+        departure_time TIME,
+        stop_order INT(6) NOT NULL,
+        FOREIGN KEY (train_id) REFERENCES trains(id),
+        FOREIGN KEY (station_id) REFERENCES stations(id)
+    )";
     $conn->exec($sql);
     
     $sql = "CREATE TABLE IF NOT EXISTS users (
